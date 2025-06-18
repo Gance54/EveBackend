@@ -25,5 +25,12 @@ namespace EveAuthApi
 
             return Ok(new { message = "Account created successfully." });
         }
+
+        // test REST comm
+        [HttpGet("sayhi")]
+        public ActionResult<string> SayHi()
+        {
+            return Ok("Hello from backend!");
+        }
     }
 }
