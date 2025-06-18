@@ -1,0 +1,6 @@
+@IndyBackend_HostAddress = http://localhost:5285
+
+GET {{IndyBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
