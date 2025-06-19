@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EveAuthApi
 {
@@ -6,31 +7,41 @@ namespace EveAuthApi
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
     {
-        private static List<User> _users = new(); // Use DB in real version
+        private readonly ApplicationDbContext _context;
+
+        public AccountController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
         [HttpPost("register")]
-        public IActionResult Register(RegisterRequest request)
+        public async Task<IActionResult> Register(RegisterRequest request)
         {
-            if (_users.Any(u => u.Email == request.Email))
+            // Check if user already exists
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
                 return BadRequest("Email already registered.");
 
             var user = new User
             {
-                Id = _users.Count + 1,
                 Email = request.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+                PasswordHash = request.Password, // Password already hashed from frontend
+                CreatedAt = DateTime.UtcNow
             };
 
-            _users.Add(user);
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
             return Ok(new { message = "Account created successfully." });
         }
 
-        // test REST comm
-        [HttpGet("sayhi")]
-        public ActionResult<string> SayHi()
+        [HttpGet("users")]
+        public async Task<IActionResult> GetUsers()
         {
-            return Ok("Hello from backend!");
+            var users = await _context.Users
+                .Select(u => new { u.Id, u.Email, u.IsSubscribed, u.CreatedAt })
+                .ToListAsync();
+            
+            return Ok(users);
         }
     }
 }
