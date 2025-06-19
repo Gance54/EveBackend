@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace EveAuthApi
 {
@@ -8,10 +10,12 @@ namespace EveAuthApi
     public class AccountController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly JwtService _jwtService;
 
-        public AccountController(ApplicationDbContext context)
+        public AccountController(ApplicationDbContext context, JwtService jwtService)
         {
             _context = context;
+            _jwtService = jwtService;
         }
 
         [HttpPost("register")]
@@ -32,6 +36,40 @@ namespace EveAuthApi
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Account created successfully." });
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginRequest request)
+        {
+            // Find user by email
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+                return BadRequest("Invalid email or password.");
+
+            // Verify password (assuming frontend sends SHA256 hash)
+            if (user.PasswordHash != request.Password)
+                return BadRequest("Invalid email or password.");
+
+            // Generate tokens
+            var accessToken = _jwtService.GenerateAccessToken(user);
+            var refreshToken = _jwtService.GenerateRefreshToken();
+
+            var response = new LoginResponse
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                ExpiresIn = 3600, // 1 hour in seconds
+                TokenType = "Bearer",
+                User = new UserInfo
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    IsSubscribed = user.IsSubscribed,
+                    CreatedAt = user.CreatedAt
+                }
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("users")]

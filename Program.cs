@@ -13,6 +13,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=EveAuth.db"));
 
+// Add JWT Service
+builder.Services.AddScoped<JwtService>();
+
 var app = builder.Build();
 
 // Ensure database is created
