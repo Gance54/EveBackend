@@ -50,7 +50,7 @@ namespace EveAuthApi
             if (user.PasswordHash != request.Password)
                 return BadRequest("Invalid email or password.");
 
-            // Generate tokens
+            // Generate tokens with different expiration times
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();
             var issuedAt = DateTime.UtcNow;
@@ -59,7 +59,8 @@ namespace EveAuthApi
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                ExpiresIn = 3600, // 1 hour in seconds
+                AccessTokenExpiresIn = 3600, // 1 hour in seconds
+                RefreshTokenExpiresIn = 2592000, // 30 days in seconds (1 month)
                 TokenType = "Bearer",
                 IssuedAt = issuedAt,
                 User = new UserInfo
