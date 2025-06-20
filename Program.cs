@@ -2,6 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using EveAuthApi;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure URLs explicitly - HTTP on 5678, HTTPS on 5679
+builder.WebHost.UseUrls("http://localhost:5678", "https://localhost:5679");
+
 builder.Services.AddControllers();
 
 // Add services to the container.
