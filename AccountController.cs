@@ -108,10 +108,7 @@ namespace EveAuthApi
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                AccessTokenExpiresIn = 3600, // 1 hour in seconds
-                RefreshTokenExpiresIn = 2592000, // 30 days in seconds (1 month)
                 TokenType = "Bearer",
-                IssuedAt = issuedAt,
                 User = new UserInfo
                 {
                     Id = user.Id,
