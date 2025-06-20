@@ -10,6 +10,8 @@ namespace EveAuthApi
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<AccessToken> AccessTokens { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,6 +27,40 @@ namespace EveAuthApi
                 
                 // Make email unique
                 entity.HasIndex(e => e.Email).IsUnique();
+            });
+
+            // Configure AccessToken entity
+            modelBuilder.Entity<AccessToken>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Token).IsRequired();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                
+                // Make token unique
+                entity.HasIndex(e => e.Token).IsUnique();
+                
+                // Configure relationship with User
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.AccessTokens)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure RefreshToken entity
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Token).IsRequired();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                
+                // Make token unique
+                entity.HasIndex(e => e.Token).IsUnique();
+                
+                // Configure relationship with User
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.RefreshTokens)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

@@ -17,5 +17,9 @@ namespace EveAuthApi
         public bool IsSubscribed { get; set; } = false;
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        // Navigation properties
+        public ICollection<AccessToken> AccessTokens { get; set; } = new List<AccessToken>();
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

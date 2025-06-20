@@ -50,10 +50,59 @@ namespace EveAuthApi
             if (user.PasswordHash != request.Password)
                 return BadRequest("Invalid email or password.");
 
-            // Generate tokens with different expiration times
-            var accessToken = _jwtService.GenerateAccessToken(user);
-            var refreshToken = _jwtService.GenerateRefreshToken();
             var issuedAt = DateTime.UtcNow;
+            var accessTokenExpiresAt = issuedAt.AddHours(1);
+            var refreshTokenExpiresAt = issuedAt.AddDays(30);
+
+            // Revoke all existing tokens for this user
+            var existingAccessTokens = await _context.AccessTokens
+                .Where(at => at.UserId == user.Id && !at.IsRevoked)
+                .ToListAsync();
+            
+            var existingRefreshTokens = await _context.RefreshTokens
+                .Where(rt => rt.UserId == user.Id && !rt.IsRevoked)
+                .ToListAsync();
+
+            foreach (var token in existingAccessTokens)
+            {
+                token.IsRevoked = true;
+            }
+            
+            foreach (var token in existingRefreshTokens)
+            {
+                token.IsRevoked = true;
+            }
+
+            // Generate new access token
+            var accessToken = _jwtService.GenerateAccessToken(user);
+            
+            // Save new access token to database
+            var newAccessToken = new AccessToken
+            {
+                Token = accessToken,
+                UserId = user.Id,
+                ExpiresAt = accessTokenExpiresAt,
+                CreatedAt = issuedAt
+            };
+            
+            _context.AccessTokens.Add(newAccessToken);
+
+            // Generate new refresh token
+            var refreshToken = _jwtService.GenerateRefreshToken();
+            
+            // Save new refresh token to database
+            var newRefreshToken = new RefreshToken
+            {
+                Token = refreshToken,
+                UserId = user.Id,
+                ExpiresAt = refreshTokenExpiresAt,
+                CreatedAt = issuedAt
+            };
+            
+            _context.RefreshTokens.Add(newRefreshToken);
+
+            // Save changes to database
+            await _context.SaveChangesAsync();
 
             var response = new LoginResponse
             {
