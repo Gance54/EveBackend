@@ -130,5 +130,50 @@ namespace EveAuthApi
             
             return Ok(users);
         }
+
+        [HttpPost("verify-token")]
+        public IActionResult VerifyToken([FromBody] TokenVerificationRequest request)
+        {
+            var principal = _jwtService.ValidateToken(request.Token);
+            if (principal == null)
+                return Unauthorized(new { message = "Invalid or expired token." });
+
+            // Optionally, return user info from claims
+            // var email = principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+            var userId = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            // var isSubscribed = principal.FindFirst("IsSubscribed")?.Value;
+
+            return Ok(new
+            {
+                UserId = userId
+                //Email = email,
+                //IsSubscribed = isSubscribed
+            });
+        }
+
+        [HttpPost("get-user")]
+        public async Task<IActionResult> GetUser([FromBody] GetUserRequest request)
+        {
+            var principal = _jwtService.ValidateToken(request.Token);
+            if (principal == null)
+                return Unauthorized(new { message = "Invalid or expired token." });
+
+            var tokenUserId = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (tokenUserId != request.UserId.ToString())
+                return Unauthorized(new { message = "Token does not match user." });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId);
+            if (user == null)
+                return NotFound(new { message = "User not found." });
+
+            return Ok(new
+            {
+                user.Id,
+                user.Email,
+                user.IsSubscribed,
+                user.CreatedAt
+                // Exclude PasswordHash
+            });
+        }
     }
 }
