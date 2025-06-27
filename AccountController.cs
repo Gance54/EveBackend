@@ -132,23 +132,24 @@ namespace EveAuthApi
         }
 
         [HttpPost("verify-token")]
-        public IActionResult VerifyToken([FromBody] TokenVerificationRequest request)
+        public async Task<IActionResult> VerifyToken([FromBody] TokenVerificationRequest request)
         {
             var principal = _jwtService.ValidateToken(request.Token);
             if (principal == null)
                 return Unauthorized(new { message = "Invalid or expired token." });
 
-            // Get user info from claims
+            // Get user ID from claims
             var userIdClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var emailClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
 
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
                 return Unauthorized(new { message = "Invalid token claims." });
 
-            return Ok(new
-            {
-                UserId = userId,
-            });
+            // Verify user exists in database
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+                return Unauthorized(new { message = "User not found." });
+
+            return Ok(new { UserId = userId });
         }
 
         [HttpPost("get-user")]
