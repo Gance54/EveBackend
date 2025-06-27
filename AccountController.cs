@@ -138,16 +138,16 @@ namespace EveAuthApi
             if (principal == null)
                 return Unauthorized(new { message = "Invalid or expired token." });
 
-            // Optionally, return user info from claims
-            // var email = principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-            var userId = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            // var isSubscribed = principal.FindFirst("IsSubscribed")?.Value;
+            // Get user info from claims
+            var userIdClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var emailClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                return Unauthorized(new { message = "Invalid token claims." });
 
             return Ok(new
             {
-                UserId = userId
-                //Email = email,
-                //IsSubscribed = isSubscribed
+                UserId = userId,
             });
         }
 
